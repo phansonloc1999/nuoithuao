@@ -6,21 +6,32 @@ local windowWidth, windowHeight = 380, 750
 
 function love.load()
     love.graphics.setDefaultFilter("nearest","nearest")
+    
     push:setupScreen(GAME_WIDTH, GAME_HEIGHT, windowWidth, windowHeight, {fullscreen = false})
+
     dog = love.graphics.newImage("assets/dog.png")
     bone = love.graphics.newImage("assets/bone.png")
     box = love.graphics.newImage("assets/box.png")
     bed = love.graphics.newImage("assets/bed.png")
+    pill = love.graphics.newImage("assets/pill.png")
+    sick = love.graphics.newImage("assets/sick.png")
 
     font = love.graphics.newFont("assets/font.ttf", 20)
     
-    hunger = 0
-    hungerMax = 10
     boneSfx = love.audio.newSource("assets/bone.wav", "static")
     sleepSfx = love.audio.newSource("assets/sleep.wav", "static")
+
+    hunger = 0
+    hungerMax = 10
     stamina = 25
     staminaMax = 50
-    sleeping = false
+    health = 50
+    healthMax = 100
+    isSleeping = false
+    sickCooldownInterval = 60
+    sickCooldown = sickCooldownInterval
+    sickProbabilityThreshold = 3
+    isSick = false
 end
 
 function love.draw()
@@ -28,25 +39,38 @@ function love.draw()
     love.graphics.setColor(0, 0, 255)
     love.graphics.rectangle("fill", 0, 0, GAME_WIDTH, GAME_HEIGHT)
     love.graphics.setColor(255, 255, 255)
-    love.graphics.draw(dog, GAME_WIDTH / 2 - dog:getWidth() / 2, GAME_HEIGHT / 2 - dog:getHeight() / 2)
-    love.graphics.setColor(0, 255, 0)
-    love.graphics.draw(box, GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1, GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bone:getHeight() / 2 - 1)
-    love.graphics.setColor(255, 255, 255)
-    love.graphics.draw(bone, GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2, GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bone:getHeight() / 2)
-    love.graphics.setColor(0, 255, 0)
-    love.graphics.draw(box, GAME_WIDTH / 2 + GAME_WIDTH / 4 - bed:getWidth() / 2, GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bed:getHeight() / 2 - 1)
-    love.graphics.setColor(255, 255, 255)
-    love.graphics.draw(bed, GAME_WIDTH / 2 + GAME_WIDTH / 4 - bed:getWidth() / 2 + 1, GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bed:getHeight() / 2 - 1)
     
+    love.graphics.draw(dog, GAME_WIDTH / 2 - dog:getWidth() / 2, GAME_HEIGHT / 2 - dog:getHeight() / 2)
+    
+    love.graphics.setColor(0, 255, 0)
+    love.graphics.draw(box, GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1, GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2)
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.draw(bone, GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2, GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2 + 1)
+    
+    love.graphics.setColor(0, 255, 0)
+    love.graphics.draw(box, GAME_WIDTH / 2 + GAME_WIDTH / 4 - bed:getWidth() / 2, GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2)
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.draw(bed, GAME_WIDTH / 2 + GAME_WIDTH / 4 - bed:getWidth() / 2 + 1, GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2)
+    
+    love.graphics.setColor(0, 255, 0)
+    love.graphics.draw(box, GAME_WIDTH / 2 + GAME_WIDTH / 4 - pill:getWidth() / 2, GAME_HEIGHT / 2 + GAME_HEIGHT / 3 + pill:getHeight() / 2 - 9)
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.draw(pill, GAME_WIDTH / 2 + GAME_WIDTH / 4 - pill:getWidth() / 2 + 1, GAME_HEIGHT / 2 + GAME_HEIGHT / 3 + pill:getHeight() / 2 - 9)
+
     if (heart) then
         love.graphics.draw(heart.img, heart.x, heart.y)
+    end
+
+    if (isSick) then
+        love.graphics.draw(sick, GAME_WIDTH / 2 + 7, GAME_HEIGHT / 2 - 14)
     end
     push:finish()
 
     love.graphics.setFont(font)
     love.graphics.setColor(0, 0, 0)
-    love.graphics.print("Hunger: ".. hunger.. "/" .. hungerMax)
-    love.graphics.print("Stamina: ".. stamina.. "/" .. staminaMax, 0, 30)
+    love.graphics.print("Hunger: ".. hunger .. "/" .. hungerMax)
+    love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 30)
+    love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 60)
 
     if (increaseHungerTxt) then
         love.graphics.setColor(0, 255, 0)
@@ -68,10 +92,10 @@ function love.update(dt)
     mouseX, mouseY = push:toGame(mouseX, mouseY)
     if (mouseX > GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1)
         and (mouseX < GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1 + 17)
-        and (mouseY > GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bone:getHeight() / 2 - 1)
-        and (mouseY < GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bone:getHeight() / 2 - 1 + 17)
+        and (mouseY > GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2)
+        and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2 + 17)
         and (love.mouse.isPressed(1))
-        and (sleeping == false)
+        and (isSleeping == false)
     then
         hunger = math.min(hunger + 1, hungerMax)
         boneSfx:play()
@@ -81,14 +105,27 @@ function love.update(dt)
 
     if (mouseX > GAME_WIDTH / 2 + GAME_WIDTH / 4 - bed:getWidth() / 2)
         and (mouseX < GAME_WIDTH / 2 + GAME_WIDTH / 4 - bed:getWidth() / 2 - 1 + box:getWidth())
-        and (mouseY > GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bed:getHeight() / 2 - 1)
-        and (mouseY < GAME_HEIGHT / 2 + GAME_HEIGHT / 3 - bed:getHeight() / 2 - 1 + box:getHeight())
+        and (mouseY > GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2)
+        and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2 + box:getHeight())
         and (love.mouse.isPressed(1))
     then
         stamina = math.min(stamina + 25, staminaMax)
         sleepSfx:play()
         increaseStamina()
         emoteSleep()
+    end
+
+    if (mouseX > GAME_WIDTH / 2 + GAME_WIDTH / 4 - pill:getWidth() / 2)
+        and (mouseX < GAME_WIDTH / 2 + GAME_WIDTH / 4 - pill:getWidth() / 2 + box:getWidth())
+        and (mouseY > GAME_HEIGHT / 2 + GAME_HEIGHT / 3 + pill:getHeight() / 2 - 9)
+        and (mouseY < GAME_HEIGHT / 2 + GAME_HEIGHT / 3 + pill:getHeight() / 2 - 9 + box:getHeight())
+        and (love.mouse.isPressed(1))
+    then
+        emoteHeart()
+        isSick = false
+        sickCooldown = sickCooldownInterval
+        hungerMax = hungerMax * 2
+        staminaMax = staminaMax * 2
     end
 
     if (increaseHungerTwn) then
@@ -109,7 +146,7 @@ function love.update(dt)
         if (sleepTween:update(dt)) then
             sleepTxt = nil
             sleepTween = nil
-            sleeping = false
+            isSleeping = false
         end
     end
     if (increaseStaminaTwn) then
@@ -117,6 +154,23 @@ function love.update(dt)
             increaseStaminaTwn = nil
             increaseStaminaTxt = nil
         end
+    end
+
+   
+    if (sickCooldown <= 0) then
+        sickCooldown = sickCooldownInterval
+        math.randomseed(os.time())
+        sickProbability = math.random(1, 5)
+        sickProbabilityThreshold = 3
+        if (sickProbability > sickProbabilityThreshold) then
+            staminaMax = math.floor(staminaMax / 2)
+            hungerMax = math.floor(hungerMax / 2)
+            stamina = math.min(stamina, staminaMax)
+            hunger = math.min(hunger, hungerMax)
+            isSick = true
+        end
+    elseif (sickCooldown > 0) then
+        sickCooldown = sickCooldown - dt
     end
 end
 

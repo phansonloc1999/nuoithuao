@@ -10,5 +10,5 @@ function emoteSleep()
     sleepTxt:add( {{0, 0, 0}, "Z"}, 0, 0)
     sleepTxt:add( {{0, 0, 0}, "Z"}, 15, -15)
     sleepTween = tween.new(5, {}, {})
-    sleeping = true
+    isSleeping = true
 end
