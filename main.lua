@@ -24,22 +24,47 @@ function love.load()
     pillSfx = love.audio.newSource("assets/pill.wav", "static")
 
     hunger = 0
-    hungerMax = 40
-    stamina = 25
-    staminaMax = 50
-    health = 50
-    healthMax = 100
+    hungerMax = 10
+    stamina = 0
+    staminaMax = 15
+    health = 0
+    healthMax = 20
     isSleeping = false
     sickCooldownInterval = 60
     sickCooldown = sickCooldownInterval
     sickProbabilityThreshold = 3
     isSick = false
     isGym = false
-    gymCooldownInterval = 120
+    gymCooldownInterval = 30
     gymCooldown = 0
-    healthRegenInterval = 1
+    healthRegenInterval = 2
+    healthRegen = healthRegenInterval
     hungerLossInterval = 10
     healthLossInterval = 5
+
+    if (not love.filesystem.exists("save.dat")) then
+        file = love.filesystem.newFile("save.dat")
+        file:open("w")
+        file:write("0\n10\n0\n15\n0\n20")
+        file:close()
+    else
+        file = love.filesystem.newFile("save.dat")
+        file:open("r")
+        data = file:read(2048)
+        lines = {}
+        i = 1
+        for line in data:gmatch("([^\n]*)\n?") do
+            lines[i] = line
+            i = i + 1
+        end
+        hunger = tonumber(lines[1])
+        hungerMax = tonumber(lines[2])
+        stamina = tonumber(lines[3])
+        staminaMax = tonumber(lines[4])
+        health = tonumber(lines[5])
+        healthMax = tonumber(lines[6])
+        file:close()
+    end
 end
 
 function love.draw()
@@ -119,7 +144,8 @@ function love.update(dt)
         and (mouseY > GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2)
         and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2 + 17)
         and (love.mouse.isPressed(1))
-        and (isSleeping == false)
+        and (not isSleeping)
+        and (not isGym)
     then
         hunger = math.min(hunger + 1, hungerMax)
         boneSfx:play()
@@ -132,8 +158,11 @@ function love.update(dt)
         and (mouseY > GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2)
         and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2 + box:getHeight())
         and (love.mouse.isPressed(1))
+        and (not isSleeping)
+        and (not isGym)
     then
-        stamina = math.min(stamina + 25, staminaMax)
+        isSleeping = true
+        stamina = math.min(stamina + math.floor(3 * staminaMax / 4), staminaMax)
         sleepSfx:play()
         increaseStamina()
         emoteSleep()
@@ -145,6 +174,8 @@ function love.update(dt)
         and (mouseY < GAME_HEIGHT / 2 + GAME_HEIGHT / 3 + pill:getHeight() / 2 - 9 + box:getHeight())
         and (love.mouse.isPressed(1))
         and (isSick)
+        and (not isSleeping)
+        and (not isGym)
     then
         emoteHeart()
         isSick = false
@@ -161,15 +192,17 @@ function love.update(dt)
     and love.mouse.isPressed(1)
     and (not isSleeping)
     and (not isGym)
-    and (hunger >= 10)
-    and (stamina >= 10)
+    and (hunger >= hungerMax / 2)
+    and (stamina >= staminaMax / 2)
     then
         isGym = true
-        stamina = math.max(0, stamina - 10)
-        healthMax = healthMax + 10
-        hunger = math.max(0, hunger - 10)
+        hunger = math.max(0, hunger - math.floor(staminaMax / 2))
+        stamina = math.max(0, stamina - math.floor(hungerMax / 2))
         decreaseHunger()
         decreaseStamina()
+        hungerMax = hungerMax + 30
+        staminaMax = staminaMax + 30
+        healthMax = healthMax + 30
         gymCooldown = gymCooldownInterval
     end
 
@@ -215,14 +248,11 @@ function love.update(dt)
         sickCooldown = sickCooldownInterval
         math.randomseed(os.time())
         sickProbability = math.random(1, 5)
-        sickProbabilityThreshold = 3
         if (sickProbability > sickProbabilityThreshold) then
             staminaMax = math.floor(staminaMax / 2)
             hungerMax = math.floor(hungerMax / 2)
             stamina = math.min(stamina, staminaMax)
             hunger = math.min(hunger, hungerMax)
-            hungerMax = hungerMax + 30
-            staminaMax = staminaMax + 30
             isSick = true
         end
     elseif (sickCooldown > 0) then
@@ -230,11 +260,11 @@ function love.update(dt)
     end
 
     if (hunger >= 3 * hungerMax / 4) then
-        if (healthRegenInterval <= 0) then
+        if (healthRegen <= 0) then
             health = math.min(healthMax, health + 1)
-            healthRegenInterval = 1
-        elseif (healthRegenInterval > 0) then
-            healthRegenInterval = math.max(0, healthRegenInterval - dt)
+            healthRegen = healthRegenInterval
+        elseif (healthRegen > 0) then
+            healthRegen = math.max(0, healthRegen - dt)
         end
     end
 
@@ -278,4 +308,11 @@ end
 
 function love.mousereleased(x, y, button)
     love.mouse.buttonsPressed[button] = false
+end
+
+function love.quit()
+    file = love.filesystem.newFile("save.dat")
+    file:open("w")
+    file:write(hunger.."\n"..hungerMax.."\n"..stamina.."\n"..staminaMax.."\n"..health.."\n"..healthMax)
+    file:close()
 end
