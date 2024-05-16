@@ -6,6 +6,7 @@ local windowWidth, windowHeight = 380, 750
 
 function love.load()
     love.graphics.setDefaultFilter("nearest","nearest")
+    love.setDeprecationOutput(false)
     
     push:setupScreen(GAME_WIDTH, GAME_HEIGHT, windowWidth, windowHeight, {fullscreen = false})
 
@@ -16,6 +17,7 @@ function love.load()
     pill = love.graphics.newImage("assets/pill.png")
     sick = love.graphics.newImage("assets/sick.png")
     weight = love.graphics.newImage("assets/weight.png")
+    egg = love.graphics.newImage("assets/egg.png")
 
     font = love.graphics.newFont("assets/font.ttf", 20)
     
@@ -23,29 +25,33 @@ function love.load()
     sleepSfx = love.audio.newSource("assets/sleep.wav", "static")
     pillSfx = love.audio.newSource("assets/pill.wav", "static")
 
-    hunger = 0
+    hunger = 5
     hungerMax = 10
-    stamina = 0
+    stamina = 5
     staminaMax = 15
-    health = 0
+    health = 10
     healthMax = 20
     isSleeping = false
     sickCooldownInterval = 60
     sickCooldown = sickCooldownInterval
     sickProbabilityThreshold = 3
     isSick = false
-    isGym = false
+    isWeight = false
     gymCooldownInterval = 30
     gymCooldown = 0
     healthRegenInterval = 2
     healthRegen = healthRegenInterval
     hungerLossInterval = 10
     healthLossInterval = 5
+    isEgg = false
+    isDog = false
 
     if (not love.filesystem.exists("save.dat")) then
         file = love.filesystem.newFile("save.dat")
         file:open("w")
-        file:write("0\n10\n0\n15\n0\n20")
+        file:write("0\n10\n0\n15\n0\n20\nisEgg")
+        isEgg = true
+        isDog = false
         file:close()
     else
         file = love.filesystem.newFile("save.dat")
@@ -63,6 +69,9 @@ function love.load()
         staminaMax = tonumber(lines[4])
         health = tonumber(lines[5])
         healthMax = tonumber(lines[6])
+        is = lines[7]
+        if (is == "isEgg") then isEgg = true end
+        if (is == "isDog") then isDog = true end
         file:close()
     end
 end
@@ -73,7 +82,12 @@ function love.draw()
     love.graphics.rectangle("fill", 0, 0, GAME_WIDTH, GAME_HEIGHT)
     love.graphics.setColor(255, 255, 255)
     
-    love.graphics.draw(dog, GAME_WIDTH / 2 - dog:getWidth() / 2, GAME_HEIGHT / 2 - dog:getHeight() / 2)
+    if (isEgg) then
+        love.graphics.draw(egg, GAME_WIDTH / 2 - egg:getWidth() / 2, GAME_HEIGHT / 2 - egg:getHeight() / 2)    
+    end
+    if (isDog) then
+        love.graphics.draw(dog, GAME_WIDTH / 2 - dog:getWidth() / 2, GAME_HEIGHT / 2 - dog:getHeight() / 2)
+    end
     
     love.graphics.setColor(0, 255, 0)
     love.graphics.draw(box, GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1, GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2)
@@ -101,6 +115,14 @@ function love.draw()
 
     if (isSick) then
         love.graphics.draw(sick, GAME_WIDTH / 2 + 3, GAME_HEIGHT / 2 - 11)
+    end
+
+    if (pillSmall) then
+        love.graphics.setColor(255, 255, 255)
+        love.graphics.draw(pillSmall.img, pillSmall.x, pillSmall.y)
+    end
+    if (weightLift) then
+        love.graphics.draw(weightLift.img, weightLift.x, weightLift.y)
     end
     push:finish()
 
@@ -145,7 +167,7 @@ function love.update(dt)
         and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2 + 17)
         and (love.mouse.isPressed(1))
         and (not isSleeping)
-        and (not isGym)
+        and (not isWeight)
     then
         hunger = math.min(hunger + 1, hungerMax)
         boneSfx:play()
@@ -159,7 +181,7 @@ function love.update(dt)
         and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2 + box:getHeight())
         and (love.mouse.isPressed(1))
         and (not isSleeping)
-        and (not isGym)
+        and (not isWeight)
     then
         isSleeping = true
         stamina = math.min(stamina + math.floor(3 * staminaMax / 4), staminaMax)
@@ -175,13 +197,14 @@ function love.update(dt)
         and (love.mouse.isPressed(1))
         and (isSick)
         and (not isSleeping)
-        and (not isGym)
+        and (not isWeight)
     then
-        emoteHeart()
         isSick = false
         sickCooldown = sickCooldownInterval
         hungerMax = hungerMax * 2
         staminaMax = staminaMax * 2
+        healthMax = healthMax * 2
+        emotePillSmall()
         pillSfx:play()
     end
 
@@ -191,11 +214,11 @@ function love.update(dt)
     and (mouseY < GAME_HEIGHT / 2 + GAME_HEIGHT / 3 + weight:getHeight() / 2 - 9 + weight:getHeight() + 1)
     and love.mouse.isPressed(1)
     and (not isSleeping)
-    and (not isGym)
+    and (not isWeight)
     and (hunger >= hungerMax / 2)
     and (stamina >= staminaMax / 2)
     then
-        isGym = true
+        isWeight = true
         hunger = math.max(0, hunger - math.floor(staminaMax / 2))
         stamina = math.max(0, stamina - math.floor(hungerMax / 2))
         decreaseHunger()
@@ -204,6 +227,7 @@ function love.update(dt)
         staminaMax = staminaMax + 30
         healthMax = healthMax + 30
         gymCooldown = gymCooldownInterval
+        emoteWeightLift()
     end
 
     if (increaseHungerTwn) then
@@ -243,6 +267,23 @@ function love.update(dt)
             decreaseStaminaTwn = nil
         end
     end
+    if (pillSmallTwn) then 
+        if (pillSmallTwn:update(dt)) then
+            pillSmall = nil
+            pillSmallTwn = nil
+        end
+    end
+    if (weightLiftTwns) then
+        if (weightLiftTwns[currentWeightLiftTwn]) then
+            if (weightLiftTwns[currentWeightLiftTwn]:update(dt)) then
+                currentWeightLiftTwn = currentWeightLiftTwn + 1
+            end
+        else
+            weightLift = nil
+            weightLiftTwns = nil
+            currentWeightLiftTwn = nil
+        end
+    end
 
     if (sickCooldown <= 0) then
         sickCooldown = sickCooldownInterval
@@ -251,6 +292,7 @@ function love.update(dt)
         if (sickProbability > sickProbabilityThreshold) then
             staminaMax = math.floor(staminaMax / 2)
             hungerMax = math.floor(hungerMax / 2)
+            healthMax = math.floor(healthMax / 2)
             stamina = math.min(stamina, staminaMax)
             hunger = math.min(hunger, hungerMax)
             isSick = true
@@ -271,8 +313,8 @@ function love.update(dt)
     if (hungerLossInterval > 0) then
         hungerLossInterval = math.max(0, hungerLossInterval - dt)
         if (hungerLossInterval <= 0) then
-            hunger = math.max(0, hunger - 1)
-            hungerLossInterval = 10
+            hunger = math.max(0, hunger - math.ceil(hungerMax / 100 * 1))
+            hungerLossInterval = 8
         end
     end
 
@@ -288,7 +330,16 @@ function love.update(dt)
     if (gymCooldown > 0) then
         gymCooldown = math.max(0, gymCooldown - dt)
     elseif (gymCooldown <= 0) then
-        isGym = false
+        isWeight = false
+    end
+
+    if (hungerMax < 150 and staminaMax < 150 and healthMax < 150 and not isDog) then
+        isEgg = true
+        isDog = false
+    end
+    if (hungerMax > 150 and hungerMax < 250 and staminaMax > 150 and staminaMax < 250 and healthMax > 150 and healthMax < 250) then
+        isEgg = false
+        isDog = true
     end
 end
 
@@ -313,6 +364,8 @@ end
 function love.quit()
     file = love.filesystem.newFile("save.dat")
     file:open("w")
-    file:write(hunger.."\n"..hungerMax.."\n"..stamina.."\n"..staminaMax.."\n"..health.."\n"..healthMax)
+    file:write(hunger.."\n"..hungerMax.."\n"..stamina.."\n"..staminaMax.."\n"..health.."\n"..healthMax.."\n")
+    if (isEgg) then file:write("isEgg") end
+    if (isDog) then file:write("isDog") end
     file:close()
 end
