@@ -34,11 +34,11 @@ function PlayState.load()
     sickProbabilityThreshold = 3
     isSick = false
     isWeight = false
-    gymCooldownInterval = 20
+    gymCooldownInterval = 30
     gymCooldown = 0
     healthRegenInterval = 2
     healthRegen = healthRegenInterval
-    hungerLossInterval = 10
+    hungerLossInterval = 8
     healthLossInterval = 5
     isEgg = false
     isDog = false
@@ -141,7 +141,7 @@ function PlayState.draw()
 
     if (sleepTxt) then
         love.graphics.setColor(0, 0, 0)
-        love.graphics.draw(sleepTxt, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 60)
+        love.graphics.draw(sleepTxt, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - sleepTxt:getHeight() * 2)
     end
     
     if (increaseStaminaTxt) then
@@ -163,6 +163,8 @@ end
 function PlayState.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
     mouseX, mouseY = push:toGame(mouseX, mouseY)
+    mouseX = mouseX and mouseX or 0
+    mouseY = mouseY and mouseY or 0
     if (mouseX > GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1)
         and (mouseX < GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1 + 17)
         and (mouseY > GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2)

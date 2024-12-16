@@ -4,13 +4,18 @@ require("src.playState")
 require("src.gameOverState")
 
 GAME_WIDTH, GAME_HEIGHT = 76, 150 --fixed game resolution
-WINDOW_WIDTH, WINDOW_HEIGHT = 380, 750
+local osString = love.system.getOS()
+if osString == "Windows" or osString == "Linux" then
+    WINDOW_WIDTH, WINDOW_HEIGHT = 380, 760
+elseif osString == "Android" or osString == "iOS" then
+    WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions(1)
+end
 
 function love.load()
     love.graphics.setDefaultFilter("nearest","nearest")
     love.setDeprecationOutput(false)
     
-    push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {fullscreen = false})
+    push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {fullscreen = false, resizable = false})
 
     StateMachine.push(PlayState)
 end
@@ -43,4 +48,8 @@ end
 
 function love.quit()
     StateMachine.quit()
+end
+
+function love.resize(w, h)
+    return push:resize(w, h)
 end
