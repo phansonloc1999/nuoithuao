@@ -43,10 +43,12 @@ function PlayState.load()
     isEgg = false
     isDog = false
 
+    saveInterval = 0
+
     if (not love.filesystem.exists("save.dat")) then
         file = love.filesystem.newFile("save.dat")
         file:open("w")
-        file:write("0\n10\n0\n15\n0\n20\nisEgg")
+        file:write("5\n10\n5\n15\n10\n20\nisEgg")
         isEgg = true
         isDog = false
         file:close()
@@ -114,11 +116,9 @@ function PlayState.draw()
     if (heart) then
         love.graphics.draw(heart.img, heart.x, heart.y)
     end
-
     if (isSick) then
         love.graphics.draw(sick, GAME_WIDTH / 2 + 3, GAME_HEIGHT / 2 - 11)
     end
-
     if (pillSmall) then
         love.graphics.setColor(255, 255, 255)
         love.graphics.draw(pillSmall.img, pillSmall.x, pillSmall.y)
@@ -141,7 +141,8 @@ function PlayState.draw()
 
     if (sleepTxt) then
         love.graphics.setColor(0, 0, 0)
-        love.graphics.draw(sleepTxt, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - sleepTxt:getHeight() * 2)
+        local x, y = push:toReal(GAME_WIDTH / 2, GAME_HEIGHT / 2)
+        love.graphics.draw(sleepTxt, x, y - sleepTxt:getHeight() * 2)
     end
     
     if (increaseStaminaTxt) then
@@ -354,19 +355,36 @@ function PlayState.update(dt)
     if (health <= 0) then
         StateMachine.push(GameOverState)
     end
+    
+    saveInterval = saveInterval + dt
+    if (saveInterval >= 1) then
+        file = love.filesystem.newFile("save.dat")
+        file:open("w")
+        file:write(hunger.."\n"..hungerMax.."\n"..stamina.."\n"..staminaMax.."\n"..health.."\n"..healthMax.."\n")
+        if (isEgg) then file:write("isEgg\n") end
+        if (isDog) then
+            file:write("isDog\n")
+            if dog == dogBrown then file:write("brown") end
+            if dog == dogDarkBrown then file:write("darkBrown") end
+            if dog == dogGray then file:write("gray") end
+            if dog == dogOrange then file:write("orange") end
+        end
+        file:close()
+        saveInterval = 0
+    end
 end
 
 function PlayState.quit()
-    file = love.filesystem.newFile("save.dat")
-    file:open("w")
-    file:write(hunger.."\n"..hungerMax.."\n"..stamina.."\n"..staminaMax.."\n"..health.."\n"..healthMax.."\n")
-    if (isEgg) then file:write("isEgg\n") end
-    if (isDog) then
-        file:write("isDog\n")
-        if dog == dogBrown then file:write("brown") end
-        if dog == dogDarkBrown then file:write("darkBrown") end
-        if dog == dogGray then file:write("gray") end
-        if dog == dogOrange then file:write("orange") end
-    end
-    file:close()
+    -- file = love.filesystem.newFile("save.dat")
+    -- file:open("w")
+    -- file:write(hunger.."\n"..hungerMax.."\n"..stamina.."\n"..staminaMax.."\n"..health.."\n"..healthMax.."\n")
+    -- if (isEgg) then file:write("isEgg\n") end
+    -- if (isDog) then
+    --     file:write("isDog\n")
+    --     if dog == dogBrown then file:write("brown") end
+    --     if dog == dogDarkBrown then file:write("darkBrown") end
+    --     if dog == dogGray then file:write("gray") end
+    --     if dog == dogOrange then file:write("orange") end
+    -- end
+    -- file:close()
 end

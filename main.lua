@@ -4,7 +4,7 @@ require("src.playState")
 require("src.gameOverState")
 
 GAME_WIDTH, GAME_HEIGHT = 76, 150 --fixed game resolution
-local osString = love.system.getOS()
+osString = love.system.getOS()
 if osString == "Windows" or osString == "Linux" then
     WINDOW_WIDTH, WINDOW_HEIGHT = 380, 760
 elseif osString == "Android" or osString == "iOS" then
