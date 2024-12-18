@@ -15,6 +15,7 @@ function PlayState.load()
     sick = love.graphics.newImage("assets/sick.png")
     weight = love.graphics.newImage("assets/weight.png")
     egg = love.graphics.newImage("assets/egg.png")
+    poop = love.graphics.newImage("assets/poop.png")
 
     font = love.graphics.newFont("assets/font.ttf", 20)
     
@@ -28,21 +29,24 @@ function PlayState.load()
     staminaMax = 15
     health = 10
     healthMax = 20
-    isSleeping = false
     sickCooldownInterval = 60
     sickCooldown = sickCooldownInterval
     sickProbabilityThreshold = 3
-    isSick = false
-    isWeight = false
     gymCooldownInterval = 30
     gymCooldown = 0
     healthRegenInterval = 2
     healthRegen = healthRegenInterval
     hungerLossInterval = 8
     healthLossInterval = 5
+    poopInterval = 30
+    poopChance = 100
+    hasPoop = false
     isEgg = false
     isDog = false
-
+    isSick = false
+    isGym = false
+    isSleeping = false
+    
     saveInterval = 0
 
     if (not love.filesystem.exists("save.dat")) then
@@ -87,10 +91,17 @@ function PlayState.draw()
     love.graphics.setColor(255, 255, 255)
     
     if (isEgg) then
-        love.graphics.draw(egg, GAME_WIDTH / 2 - egg:getWidth() / 2, GAME_HEIGHT / 2 - egg:getHeight() / 2)    
+        if (shakeTwns == nil) then
+            love.graphics.draw(egg, GAME_WIDTH / 2 - egg:getWidth() / 2, GAME_HEIGHT / 2 - egg:getHeight() / 2)    
+        else
+            love.graphics.draw(egg, shakePos.x, GAME_HEIGHT / 2 - egg:getHeight() / 2)
+        end
     end
     if (isDog) then
         love.graphics.draw(dog, GAME_WIDTH / 2 - dog:getWidth() / 2, GAME_HEIGHT / 2 - dog:getHeight() / 2)
+    end
+    if (hasPoop and isDog) then
+        love.graphics.draw(poop, GAME_WIDTH / 2 + dog:getWidth() / 2, GAME_HEIGHT / 2 + dog:getHeight() / 2 - poop:getHeight())
     end
     
     love.graphics.setColor(0, 255, 0)
@@ -172,7 +183,7 @@ function PlayState.update(dt)
         and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2 + 17)
         and (love.mouse.isPressed(1))
         and (not isSleeping)
-        and (not isWeight)
+        and (not isGym)
     then
         hunger = math.min(hunger + 1, hungerMax)
         boneSfx:play()
@@ -186,7 +197,7 @@ function PlayState.update(dt)
         and (mouseY < GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bed:getHeight() / 2 + box:getHeight())
         and (love.mouse.isPressed(1))
         and (not isSleeping)
-        and (not isWeight)
+        and (not isGym)
     then
         isSleeping = true
         stamina = math.min(stamina + math.floor(3 * staminaMax / 4), staminaMax)
@@ -202,7 +213,7 @@ function PlayState.update(dt)
         and (love.mouse.isPressed(1))
         and (isSick)
         and (not isSleeping)
-        and (not isWeight)
+        and (not isGym)
     then
         isSick = false
         sickCooldown = sickCooldownInterval
@@ -219,20 +230,34 @@ function PlayState.update(dt)
     and (mouseY < GAME_HEIGHT / 2 + GAME_HEIGHT / 3 + weight:getHeight() / 2 - 9 + weight:getHeight() + 1)
     and love.mouse.isPressed(1)
     and (not isSleeping)
-    and (not isWeight)
+    and (not isGym)
     and (hunger >= hungerMax / 2)
     and (stamina >= staminaMax / 2)
     then
-        isWeight = true
-        hunger = math.max(0, hunger - math.floor(staminaMax / 2))
-        stamina = math.max(0, stamina - math.floor(hungerMax / 2))
-        decreaseHunger()
-        decreaseStamina()
-        hungerMax = hungerMax + 30
-        staminaMax = staminaMax + 30
-        healthMax = healthMax + 30
-        gymCooldown = gymCooldownInterval
-        emoteWeightLift()
+        isGym = true
+            hunger = math.max(0, hunger - math.floor(staminaMax / 2))
+            stamina = math.max(0, stamina - math.floor(hungerMax / 2))
+            decreaseHunger()
+            decreaseStamina()
+            hungerMax = hungerMax + 30
+            staminaMax = staminaMax + 30
+            healthMax = healthMax + 30
+            gymCooldown = gymCooldownInterval
+        if (isEgg) then
+            emoteShake()
+        elseif (isDog) then
+            emoteWeightLift()
+        end
+    end
+
+    if (mouseX > GAME_WIDTH / 2 + dog:getWidth() / 2)
+    and (mouseX < GAME_WIDTH / 2 + dog:getWidth() / 2 + poop:getWidth())
+    and (mouseY > GAME_HEIGHT / 2 + dog:getHeight() / 2 - poop:getHeight())
+    and (mouseY < GAME_HEIGHT / 2 + dog:getHeight() / 2)
+    and (hasPoop)
+    and (love.mouse.isDown(1)) then
+        hasPoop = false
+        poopInterval = 30
     end
 
     if (increaseHungerTwn) then
@@ -289,10 +314,16 @@ function PlayState.update(dt)
             currentWeightLiftTwn = nil
         end
     end
+    if (shakeTwns) then
+        if (shakeTwns[shakeCurrentTwn]) then
+            if (shakeTwns[shakeCurrentTwn]:update(dt)) then
+                shakeCurrentTwn = shakeCurrentTwn + 1
+            end
+        end
+    end
 
     if (sickCooldown <= 0) then
         sickCooldown = sickCooldownInterval
-        math.randomseed(os.time())
         sickProbability = math.random(1, 5)
         if (sickProbability > sickProbabilityThreshold) then
             staminaMax = math.floor(staminaMax / 2)
@@ -322,6 +353,13 @@ function PlayState.update(dt)
             hungerLossInterval = 8
         end
     end
+    if (poopInterval > 0) and not hasPoop then
+        poopInterval = math.max(0, poopInterval - dt)
+        if (poopInterval == 0) then
+            hasPoop = math.random(1, 100) < poopChance and true or false
+            poopInterval = 30
+        end
+    end
 
     if (hunger <= 0) then
         if (healthLossInterval > 0) then
@@ -335,7 +373,7 @@ function PlayState.update(dt)
     if (gymCooldown > 0) then
         gymCooldown = math.max(0, gymCooldown - dt)
     elseif (gymCooldown <= 0) then
-        isWeight = false
+        isGym = false
     end
 
     if (hungerMax < 150 and staminaMax < 150 and healthMax < 150 and not isDog) then

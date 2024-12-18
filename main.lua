@@ -16,6 +16,7 @@ function love.load()
     love.setDeprecationOutput(false)
     
     push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {fullscreen = false, resizable = false})
+    math.randomseed(os.time())
 
     StateMachine.push(PlayState)
 end
