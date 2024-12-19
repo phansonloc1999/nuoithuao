@@ -37,7 +37,7 @@ function emoteShake()
     shakeTwns = {}
     shakePos = { x = GAME_WIDTH / 2 - egg:getWidth() / 2 }
     shakeCurrentTwn = 1
-    for i = 1, 600, 1 do
+    for i = 1, 60, 1 do
         if (i % 2 == 1) then
             shakeTwns[i] = tween.new(0.5, shakePos, { x = GAME_WIDTH / 2 - egg:getWidth() / 2 - 1})
         elseif (i % 2 == 0) then

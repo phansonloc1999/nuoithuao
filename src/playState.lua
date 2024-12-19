@@ -2,6 +2,7 @@ PlayState = {}
 
 require "src.textEffects"
 require "src.emoteEffects" 
+require "src.poop"
 
 function PlayState.load()
     dogBrown = love.graphics.newImage("assets/dog-brown.png")
@@ -15,6 +16,7 @@ function PlayState.load()
     sick = love.graphics.newImage("assets/sick.png")
     weight = love.graphics.newImage("assets/weight.png")
     egg = love.graphics.newImage("assets/egg.png")
+    eggBroken = love.graphics.newImage("assets/egg-broken.png")
     poop = love.graphics.newImage("assets/poop.png")
 
     font = love.graphics.newFont("assets/font.ttf", 20)
@@ -31,15 +33,16 @@ function PlayState.load()
     healthMax = 20
     sickCooldownInterval = 60
     sickCooldown = sickCooldownInterval
-    sickProbabilityThreshold = 3
+    sickChance = math.random(1, 5)
+    sickChanceThreshold = 3
     gymCooldownInterval = 30
     gymCooldown = 0
     healthRegenInterval = 2
     healthRegen = healthRegenInterval
     hungerLossInterval = 8
     healthLossInterval = 5
-    poopInterval = 30
-    poopChance = 100
+    poopInterval = 1
+    poopChanceThreshold = 20
     hasPoop = false
     isEgg = false
     isDog = false
@@ -91,18 +94,24 @@ function PlayState.draw()
     love.graphics.setColor(255, 255, 255)
     
     if (isEgg) then
-        if (shakeTwns == nil) then
-            love.graphics.draw(egg, GAME_WIDTH / 2 - egg:getWidth() / 2, GAME_HEIGHT / 2 - egg:getHeight() / 2)    
+        if (hungerMax < 100) and (staminaMax < 100) then
+            if (shakeTwns == nil) then
+                love.graphics.draw(egg, GAME_WIDTH / 2 - egg:getWidth() / 2, GAME_HEIGHT / 2 - egg:getHeight() / 2)    
+            else
+                love.graphics.draw(egg, shakePos.x, GAME_HEIGHT / 2 - egg:getHeight() / 2)
+            end
         else
-            love.graphics.draw(egg, shakePos.x, GAME_HEIGHT / 2 - egg:getHeight() / 2)
+            if (shakeTwns == nil) then
+                love.graphics.draw(eggBroken, GAME_WIDTH / 2 - egg:getWidth() / 2, GAME_HEIGHT / 2 - egg:getHeight() / 2)
+            else 
+                love.graphics.draw(eggBroken, shakePos.x, GAME_HEIGHT / 2 - egg:getHeight() / 2)
+            end
         end
     end
     if (isDog) then
         love.graphics.draw(dog, GAME_WIDTH / 2 - dog:getWidth() / 2, GAME_HEIGHT / 2 - dog:getHeight() / 2)
     end
-    if (hasPoop and isDog) then
-        love.graphics.draw(poop, GAME_WIDTH / 2 + dog:getWidth() / 2, GAME_HEIGHT / 2 + dog:getHeight() / 2 - poop:getHeight())
-    end
+    drawPoop()
     
     love.graphics.setColor(0, 255, 0)
     love.graphics.draw(box, GAME_WIDTH / 2 - GAME_WIDTH / 4 - bone:getWidth() / 2 - 1, GAME_HEIGHT / 2 + math.floor(GAME_HEIGHT / 4) - bone:getHeight() / 2)
@@ -173,7 +182,7 @@ function PlayState.draw()
 end
 
 function PlayState.update(dt)
-    local mouseX, mouseY = love.mouse.getPosition()
+    mouseX, mouseY = love.mouse.getPosition()
     mouseX, mouseY = push:toGame(mouseX, mouseY)
     mouseX = mouseX and mouseX or 0
     mouseY = mouseY and mouseY or 0
@@ -250,16 +259,6 @@ function PlayState.update(dt)
         end
     end
 
-    if (mouseX > GAME_WIDTH / 2 + dog:getWidth() / 2)
-    and (mouseX < GAME_WIDTH / 2 + dog:getWidth() / 2 + poop:getWidth())
-    and (mouseY > GAME_HEIGHT / 2 + dog:getHeight() / 2 - poop:getHeight())
-    and (mouseY < GAME_HEIGHT / 2 + dog:getHeight() / 2)
-    and (hasPoop)
-    and (love.mouse.isDown(1)) then
-        hasPoop = false
-        poopInterval = 30
-    end
-
     if (increaseHungerTwn) then
         if (increaseHungerTwn:update(dt)) then
             increaseHungerTwn = nil
@@ -318,14 +317,17 @@ function PlayState.update(dt)
         if (shakeTwns[shakeCurrentTwn]) then
             if (shakeTwns[shakeCurrentTwn]:update(dt)) then
                 shakeCurrentTwn = shakeCurrentTwn + 1
+                if (shakeTwns[shakeCurrentTwn] == nil) then
+                    shakeTwns = nil
+                end
             end
         end
     end
 
     if (sickCooldown <= 0) then
         sickCooldown = sickCooldownInterval
-        sickProbability = math.random(1, 5)
-        if (sickProbability > sickProbabilityThreshold) then
+        sickChance = math.random(1, 5)
+        if (sickChance > sickChanceThreshold) then
             staminaMax = math.floor(staminaMax / 2)
             hungerMax = math.floor(hungerMax / 2)
             healthMax = math.floor(healthMax / 2)
@@ -353,13 +355,7 @@ function PlayState.update(dt)
             hungerLossInterval = 8
         end
     end
-    if (poopInterval > 0) and not hasPoop then
-        poopInterval = math.max(0, poopInterval - dt)
-        if (poopInterval == 0) then
-            hasPoop = math.random(1, 100) < poopChance and true or false
-            poopInterval = 30
-        end
-    end
+    poopUpdate(dt)
 
     if (hunger <= 0) then
         if (healthLossInterval > 0) then
@@ -413,16 +409,4 @@ function PlayState.update(dt)
 end
 
 function PlayState.quit()
-    -- file = love.filesystem.newFile("save.dat")
-    -- file:open("w")
-    -- file:write(hunger.."\n"..hungerMax.."\n"..stamina.."\n"..staminaMax.."\n"..health.."\n"..healthMax.."\n")
-    -- if (isEgg) then file:write("isEgg\n") end
-    -- if (isDog) then
-    --     file:write("isDog\n")
-    --     if dog == dogBrown then file:write("brown") end
-    --     if dog == dogDarkBrown then file:write("darkBrown") end
-    --     if dog == dogGray then file:write("gray") end
-    --     if dog == dogOrange then file:write("orange") end
-    -- end
-    -- file:close()
 end
