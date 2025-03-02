@@ -17,9 +17,8 @@ function PlayState.load()
     weight = love.graphics.newImage("assets/weight.png")
     egg = love.graphics.newImage("assets/egg.png")
     eggBroken = love.graphics.newImage("assets/egg-broken.png")
-    poop = love.graphics.newImage("assets/poop.png")
 
-    font = love.graphics.newFont("assets/font.ttf", 20)
+    font = love.graphics.newFont("assets/font.ttf", 50)
     
     boneSfx = love.audio.newSource("assets/bone.wav", "static")
     sleepSfx = love.audio.newSource("assets/sleep.wav", "static")
@@ -33,17 +32,14 @@ function PlayState.load()
     healthMax = 20
     sickCooldownInterval = 60
     sickCooldown = sickCooldownInterval
-    sickChance = math.random(1, 5)
-    sickChanceThreshold = 3
+    sickChance = math.random(1, 100)
+    sickChanceThreshold = 30
     gymCooldownInterval = 30
     gymCooldown = 0
     healthRegenInterval = 2
     healthRegen = healthRegenInterval
     hungerLossInterval = 8
     healthLossInterval = 5
-    poopInterval = 1
-    poopChanceThreshold = 20
-    hasPoop = false
     isEgg = false
     isDog = false
     isSick = false
@@ -85,6 +81,8 @@ function PlayState.load()
         if color == "orange" then dog = dogOrange end
         file:close()
     end
+
+    loadPoop()
 end
 
 function PlayState.draw()
@@ -151,8 +149,8 @@ function PlayState.draw()
     love.graphics.setFont(font)
     love.graphics.setColor(0, 0, 0)
     love.graphics.print("Hunger: ".. hunger .. "/" .. hungerMax)
-    love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 30)
-    love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 60)
+    love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 50)
+    love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 100)
 
     if (increaseHungerTxt) then
         love.graphics.setColor(0, 255, 0)
@@ -326,13 +324,14 @@ function PlayState.update(dt)
 
     if (sickCooldown <= 0) then
         sickCooldown = sickCooldownInterval
-        sickChance = math.random(1, 5)
-        if (sickChance > sickChanceThreshold) then
+        sickChance = math.random(1, 100)
+        if (sickChance < sickChanceThreshold) then
             staminaMax = math.floor(staminaMax / 2)
             hungerMax = math.floor(hungerMax / 2)
             healthMax = math.floor(healthMax / 2)
             stamina = math.min(stamina, staminaMax)
             hunger = math.min(hunger, hungerMax)
+            health = math.min(health, healthMax)
             isSick = true
         end
     elseif (sickCooldown > 0) then

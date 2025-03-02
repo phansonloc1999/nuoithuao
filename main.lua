@@ -15,7 +15,8 @@ function love.load()
     love.graphics.setDefaultFilter("nearest","nearest")
     love.setDeprecationOutput(false)
     
-    push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {fullscreen = false, resizable = false})
+    love.window.setMode(WINDOW_WIDTH, WINDOW_HEIGHT, {resizable = false, fullscreen = true, highdpi = true, usedpiscale = false})
+    push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {pixelperfect = true, highdpi = true, canvas = true})
     math.randomseed(os.time())
 
     StateMachine.push(PlayState)
@@ -26,7 +27,7 @@ function love.draw()
 end
 
 function love.update(dt)
-    StateMachine.update(dt)
+    StateMachine.update(dt) 
 end
 
 love.mouse.buttonsPressed = {}

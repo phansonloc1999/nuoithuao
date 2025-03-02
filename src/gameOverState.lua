@@ -3,9 +3,12 @@ GameOverState = {}
 local gameOverTxt, gameOverTxtX, gameOverTxtY
 
 function GameOverState.load()
-    font = love.graphics.newFont("assets/font.ttf", 20)
+    font = love.graphics.newFont("assets/font.ttf", 50)
     gameOverTxt = love.graphics.newText(font, "Game Over")
     gameOverTxtX, gameOverTxtY = push:toReal(GAME_WIDTH / 2, GAME_HEIGHT / 2)
+    fontSmall = love.graphics.newFont("assets/font.ttf", 46)
+    clickTxt = love.graphics.newText(fontSmall, "Click to continue")
+    clickTxtX, clickTxtY = push:toReal(GAME_WIDTH / 2, GAME_HEIGHT / 2)
 
     file = love.filesystem.newFile("save.dat")
     file:open("w")
@@ -16,6 +19,7 @@ end
 function GameOverState.draw()
     love.graphics.setColor(255, 255, 255)
     love.graphics.draw(gameOverTxt, gameOverTxtX - gameOverTxt:getWidth() / 2, gameOverTxtY - gameOverTxt:getHeight() / 2)
+    love.graphics.draw(clickTxt, clickTxtX - clickTxt:getWidth() / 2, clickTxtY + gameOverTxt:getHeight() / 2 + clickTxt:getHeight())
 end
 
 function GameOverState.update(dt)
