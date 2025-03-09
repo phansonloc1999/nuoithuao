@@ -27,5 +27,5 @@ $ ./build.bat
 ```console
 $ git clone https://github.com/phansonloc1999/nuoithuao.git
 $ cd nuoithuao
-$ love
+$ love .
 ```
