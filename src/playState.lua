@@ -18,7 +18,7 @@ function PlayState.load()
     egg = love.graphics.newImage("assets/egg.png")
     eggBroken = love.graphics.newImage("assets/egg-broken.png")
 
-    font = love.graphics.newFont("assets/font.ttf", 50)
+    font = love.graphics.newFont("assets/font.ttf", 20)
     
     boneSfx = love.audio.newSource("assets/bone.wav", "static")
     sleepSfx = love.audio.newSource("assets/sleep.wav", "static")
@@ -149,8 +149,8 @@ function PlayState.draw()
     love.graphics.setFont(font)
     love.graphics.setColor(0, 0, 0)
     love.graphics.print("Hunger: ".. hunger .. "/" .. hungerMax)
-    love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 50)
-    love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 100)
+    love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 20)
+    love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 40)
 
     if (increaseHungerTxt) then
         love.graphics.setColor(0, 255, 0)
