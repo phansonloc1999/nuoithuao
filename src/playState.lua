@@ -17,8 +17,6 @@ function PlayState.load()
     weight = love.graphics.newImage("assets/weight.png")
     egg = love.graphics.newImage("assets/egg.png")
     eggBroken = love.graphics.newImage("assets/egg-broken.png")
-
-    font = love.graphics.newFont("assets/font.ttf", 20)
     
     boneSfx = love.audio.newSource("assets/bone.wav", "static")
     sleepSfx = love.audio.newSource("assets/sleep.wav", "static")
@@ -148,9 +146,15 @@ function PlayState.draw()
 
     love.graphics.setFont(font)
     love.graphics.setColor(0, 0, 0)
-    love.graphics.print("Hunger: ".. hunger .. "/" .. hungerMax)
-    love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 20)
-    love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 40)
+    if osString == "Windows" or osString == "Linux" then
+        love.graphics.print("Hunger: ".. hunger .. "/" .. hungerMax)
+        love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 20)
+        love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 40)
+    elseif osString == "Android" or osString == "iOS" then
+        love.graphics.print("Hunger: ".. hunger .. "/" .. hungerMax)
+        love.graphics.print("Stamina: ".. stamina .. "/" .. staminaMax, 0, 50)
+        love.graphics.print("Health: ".. health .. "/" .. healthMax, 0, 100)
+    end
 
     if (increaseHungerTxt) then
         love.graphics.setColor(0, 255, 0)
@@ -160,7 +164,11 @@ function PlayState.draw()
     if (sleepTxt) then
         love.graphics.setColor(0, 0, 0)
         local x, y = push:toReal(GAME_WIDTH / 2, GAME_HEIGHT / 2)
-        love.graphics.draw(sleepTxt, x, y - sleepTxt:getHeight() * 2)
+        if osString == "Windows" or osString == "Linux" then
+            love.graphics.draw(sleepTxt, x, y - sleepTxt:getHeight() * 2)
+        elseif osString == "Android" or osString == "iOS" then
+            love.graphics.draw(sleepTxt, x, y - sleepTxt:getHeight() * 2 - 100)
+        end
     end
     
     if (increaseStaminaTxt) then

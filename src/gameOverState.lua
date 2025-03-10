@@ -3,10 +3,19 @@ GameOverState = {}
 local gameOverTxt, gameOverTxtX, gameOverTxtY
 
 function GameOverState.load()
-    font = love.graphics.newFont("assets/font.ttf", 50)
+    if osString == "Windows" or osString == "Linux" then
+        font = love.graphics.newFont("assets/font.ttf", 20)
+    elseif osString == "Android" or osString == "iOS" then
+        font = love.graphics.newFont("assets/font.ttf", 50)
+    end
     gameOverTxt = love.graphics.newText(font, "Game Over")
     gameOverTxtX, gameOverTxtY = push:toReal(GAME_WIDTH / 2, GAME_HEIGHT / 2)
-    fontSmall = love.graphics.newFont("assets/font.ttf", 46)
+
+    if osString == "Windows" or osString == "Linux" then
+        fontSmall = love.graphics.newFont("assets/font.ttf", 16)
+    elseif osString == "Android" or osString == "iOS" then
+        fontSmall = love.graphics.newFont("assets/font.ttf", 46)
+    end
     clickTxt = love.graphics.newText(fontSmall, "Click to continue")
     clickTxtX, clickTxtY = push:toReal(GAME_WIDTH / 2, GAME_HEIGHT / 2)
 

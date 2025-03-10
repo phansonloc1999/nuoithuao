@@ -7,9 +7,11 @@ GAME_WIDTH, GAME_HEIGHT = 76, 150 --fixed game resolution
 osString = love.system.getOS()
 if osString == "Windows" or osString == "Linux" then
     WINDOW_WIDTH, WINDOW_HEIGHT = 304, 600
+    font = love.graphics.newFont("assets/font.ttf", 20)
 else
     if osString == "Android" or osString == "iOS" then
-    	WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions(1)
+        WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions(1)
+        font = love.graphics.newFont("assets/font.ttf", 50)
     end
 end
 
@@ -17,8 +19,8 @@ function love.load()
     love.graphics.setDefaultFilter("nearest","nearest")
     love.setDeprecationOutput(false)
     
-    love.window.setMode(WINDOW_WIDTH, WINDOW_HEIGHT, {resizable = false, fullscreen = true, highdpi = true, usedpiscale = false})
-    push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {pixelperfect = true, highdpi = true, canvas = true})
+    love.window.setMode(WINDOW_WIDTH, WINDOW_HEIGHT, {resizable = false, highdpi = true, usedpiscale = false})
+    push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {fullscreen = true, pixelperfect = true, highdpi = true, canvas = true})
     math.randomseed(os.time())
 
     StateMachine.push(PlayState)

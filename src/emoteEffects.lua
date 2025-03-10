@@ -7,9 +7,9 @@ end
 
 function emoteSleep()
     sleepTxt = love.graphics.newText(font)
-    sleepTxt:add( {{0, 0, 0}, "Z"}, 0, 0)
     sleepTxt:add( {{0, 0, 0}, "Z"}, 15, -15)
-    sleepTxt:add( {{0, 0, 0}, "Z"}, 30, -30)
+    sleepTxt:add( {{0, 0, 0}, "Z"}, 50, -50)
+    sleepTxt:add( {{0, 0, 0}, "Z"}, 90, -90)
     sleepTween = tween.new(20, {}, {})
     isSleeping = true
 end
